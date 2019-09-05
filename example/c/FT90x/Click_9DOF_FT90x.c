@@ -1,37 +1,16 @@
-![MikroE](http://www.mikroe.com/img/designs/beta/logo_small.png)
+/*
+Example for 9DOF Click
+
+    Date          : Aug 2018.
+    Author        : Nenad Filipovic
+
+Test configuration FT90x :
+    
+    MCU                : FT900
+    Dev. Board         : EasyFT90x v7 
+    FT90x Compiler ver : v2.3.0.0
 
 ---
-
-# 9DOF Click
-
----
-
-- **CIC Prefix**  : C9DOF
-- **Author**      : Nenad Filipovic
-- **Verison**     : 1.0.0
-- **Date**        : Aug 2018.
-
----
-
-### Software Support
-
-We provide a library for the 9DOF Click on our [LibStock](https://libstock.mikroe.com/projects/view/1598/9dof-click) 
-page, as well as a demo application (example), developed using MikroElektronika 
-[compilers](http://shop.mikroe.com/compilers). The demo can run on all the main 
-MikroElektronika [development boards](http://shop.mikroe.com/development-boards).
-
-**Library Description**
-
-The library covers all the necessary functions to control and read X-axis, Y-axis & Z-axis data of 
-accel, gyro and magnetometar coordinates and temperatuer data from 9DOF Click.
-
-Key functions :
-
-- ``` void c9dof_readGyro( int16_t *gyroX, int16_t *gyroY, int16_t *gyroZ ) ``` - Function read Gyro X-axis, Y-axis and Z-axis axis
-- ``` void c9dof_readAccel( int16_t *accelX, int16_t *accelY, int16_t *accelZ ) ``` - Function read Accel X-axis, Y-axis and Z-axis
-- ``` void c9dof_readMag( int16_t *magX, int16_t *magY, int16_t *magZ ) ``` - Function read Magnetometar X-axis, Y-axis and Z-axis
-
-**Examples Description**
 
 Description :
 
@@ -40,11 +19,74 @@ The application is composed of three sections :
 - System Initialization - Initializes I2C, set INT pin as input.
 - Application Initialization - Initialization driver enable's - I2C, initialize LSM9DS1 and start write log.
 - Application Task - (code snippet) This is a example which demonstrates the use of 9DOF Click board.
-     Measured accel, gyro and magnetometar coordinates values ( X, Y, Z ) and temperature value in degrees C are being sent to the uart where you can track their changes.
+     Measured accel, gyro and magnetometar coordinates values (X,Y,Z) and temperature value in degrees C are being sent to the uart where you can track their changes.
      All data logs on usb uart for aproximetly every 1 sec.
 
+Additional Functions :
 
-```.c
+- UART
+- Conversions
+
+*/
+
+#include "Click_9DOF_types.h"
+#include "Click_9DOF_config.h"
+
+
+int16_t accelX;
+int16_t accelY;
+int16_t accelZ;
+int16_t gyroX;
+int16_t gyroY;
+int16_t gyroZ;
+int16_t magX;
+int16_t magY;
+int16_t magZ;
+float temperature;
+uint8_t temp[2]    = {0};
+char logText[ 15 ] = {0};
+
+void systemInit()
+{
+    mikrobus_gpioInit( _MIKROBUS1, _MIKROBUS_INT_PIN, _GPIO_INPUT );
+    mikrobus_gpioInit( _MIKROBUS1, _MIKROBUS_RST_PIN, _GPIO_OUTPUT );
+    mikrobus_i2cInit( _MIKROBUS1, &_C9DOF_I2C_CFG[0] );
+    mikrobus_logInit( _MIKROBUS2, 9600 );
+    Delay_100ms();
+}
+
+void applicationInit()
+{
+    c9dof_i2cDriverInit( (T_C9DOF_P)&_MIKROBUS1_GPIO, (T_C9DOF_P)&_MIKROBUS1_I2C, _C9DOF_ADDRESS_00 );
+
+    /*  Initializes  */
+    //ACCEL & GYRO
+    c9dof_writeData( _C9DOF_CTRL_REG4, _C9DOF_CTRL_REG4_CONFIG );
+    Delay_10ms();
+    c9dof_writeData( _C9DOF_CTRL_REG1_G, _C9DOF_CTRL_REG1_G_CONFIG );
+    Delay_10ms();
+    c9dof_writeData( _C9DOF_CTRL_REG5_XL, _C9DOF_CTRL_REG5_XL_CONFIG );
+    Delay_10ms();
+    c9dof_writeData( _C9DOF_CTRL_REG6_XL, _C9DOF_CTRL_REG6_XL_CONFIG );
+    Delay_10ms();
+    c9dof_writeData( _C9DOF_CTRL_REG8, _C9DOF_CTRL_REG8_CONFIG );
+    Delay_10ms();
+    //MAGNETOMETAR
+    c9dof_writeDataMag( _C9DOF_CTRL_REG1_M, _C9DOF_CTRL_REG1_M_CONFIG );
+    Delay_10ms();
+    c9dof_writeDataMag( _C9DOF_CTRL_REG2_M, _C9DOF_CTRL_REG2_M_CONFIG );
+    Delay_10ms();
+    c9dof_writeDataMag( _C9DOF_CTRL_REG3_M, _C9DOF_CTRL_REG3_M_CONFIG );
+    Delay_10ms();
+    c9dof_writeDataMag( _C9DOF_CTRL_REG4_M, _C9DOF_CTRL_REG4_M_CONFIG );
+    Delay_10ms();
+    c9dof_writeDataMag( _C9DOF_CTRL_REG5_M, _C9DOF_CTRL_REG5_M_CONFIG );
+    Delay_10ms();
+    
+    mikrobus_logWrite("----------------------------------------------------------------------------", _LOG_LINE);
+    mikrobus_logWrite("|     Accel       |       Gyro        |       Mag        |       Temp. °C  |",_LOG_LINE);
+    mikrobus_logWrite("----------------------------------------------------------------------------", _LOG_LINE);
+}
 
 void applicationTask()
 {
@@ -107,26 +149,13 @@ void applicationTask()
     Delay_1sec();
 }
 
-```
+void main()
+{
+    systemInit();
+    applicationInit();
 
-The full application code, and ready to use projects can be found on our 
-[LibStock](https://libstock.mikroe.com/projects/view/1598/9dof-click) page.
-
-Other mikroE Libraries used in the example:
-
-- UART
-- Conversions
-
-**Additional notes and informations**
-
-Depending on the development board you are using, you may need 
-[USB UART click](http://shop.mikroe.com/usb-uart-click), 
-[USB UART 2 Click](http://shop.mikroe.com/usb-uart-2-click) or 
-[RS232 Click](http://shop.mikroe.com/rs232-click) to connect to your PC, for 
-development systems with no UART to USB interface available on the board. The 
-terminal available in all Mikroelektronika 
-[compilers](http://shop.mikroe.com/compilers), or any other terminal application 
-of your choice, can be used to read the message.
-
----
----
+    while (1)
+    {
+            applicationTask();
+    }
+}
